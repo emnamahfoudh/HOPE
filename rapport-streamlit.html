@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport PFE — Analyse de Sentiment Tunisien</title>
+<style>
+  :root {
+    --primary:   #1a73e8;
+    --pos:       #1e8e3e;
+    --neg:       #d93025;
+    --neu:       #e37400;
+    --bg:        #ffffff;
+    --surface:   #f8f9fa;
+    --border:    #e0e0e0;
+    --text:      #212121;
+    --muted:     #5f6368;
+    --accent:    #e8f0fe;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #0d47a1 0%, #1a73e8 50%, #42a5f5 100%);
+    color: white;
+    padding: 80px 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .cover-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .cover h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+  .cover h2 {
+    font-size: 1.2rem;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-bottom: 48px;
+    max-width: 600px;
+  }
+  .cover-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 700px;
+    margin-top: 48px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 32px;
+  }
+  .cover-meta-item label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item span {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .cover-tags {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+  .cover-tag {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 40px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 56px;
+  }
+  .toc h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    margin-bottom: 20px;
+  }
+  .toc ol {
+    padding-left: 20px;
+  }
+  .toc li {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .toc li a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .toc li a:hover { color: var(--primary); }
+  .toc li.sub {
+    padding-left: 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ── Sections ── */
+  section { margin-bottom: 64px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-number {
+    background: var(--primary);
+    color: white;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 28px 0 12px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 20px 0 8px;
+  }
+
+  p { margin-bottom: 14px; color: var(--text); }
+
+  /* ── Architecture diagram ── */
+  .arch {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 12px;
+    padding: 32px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+  .arch .box {
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 12px 20px;
+    margin: 8px 0;
+    background: #1e293b;
+  }
+  .arch .arrow {
+    text-align: center;
+    color: #60a5fa;
+    font-size: 18px;
+  }
+  .arch .step-label {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .arch .step-main { color: #f8fafc; font-weight: 600; }
+  .arch .step-sub { color: #94a3b8; font-size: 12px; }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 14px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  thead { background: var(--primary); color: white; }
+  th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 13px; }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--surface); }
+  tr:hover td { background: var(--accent); }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 16px 0 24px;
+  }
+  code {
+    font-family: 'Courier New', monospace;
+  }
+  .inline-code {
+    background: #f1f3f4;
+    color: #c7254e;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  /* ── KPI cards ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 12px;
+    text-align: center;
+  }
+  .kpi-val {
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .kpi-lbl {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-pos { background: #e8f5e9; color: var(--pos); }
+  .badge-neg { background: #fce8e6; color: var(--neg); }
+  .badge-neu { background: #fef3e2; color: var(--neu); }
+  .badge-info { background: var(--accent); color: var(--primary); }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 20px 0;
+    border-left: 4px solid;
+  }
+  .callout-key {
+    background: #e8f0fe;
+    border-color: var(--primary);
+  }
+  .callout-warn {
+    background: #fef3e2;
+    border-color: var(--neu);
+  }
+  .callout-success {
+    background: #e8f5e9;
+    border-color: var(--pos);
+  }
+  .callout-title {
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  /* ── File tree ── */
+  .filetree {
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: #333;
+  }
+  .filetree .dir { color: var(--primary); font-weight: 600; }
+  .filetree .file { color: #555; }
+  .filetree .comment { color: #888; font-style: italic; }
+
+  /* ── Stat bars ── */
+  .stat-bar-row { margin: 8px 0; }
+  .stat-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .stat-bar-bg {
+    background: #e0e0e0;
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+
+  /* ── Word tags ── */
+  .word-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .word-tag {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .word-tag-neg { background: #fce8e6; color: var(--neg); }
+  .word-tag-pos { background: #e8f5e9; color: var(--pos); }
+  .word-tag-neu { background: #fef3e2; color: var(--neu); }
+
+  /* ── Limit table ── */
+  .limit-row td:first-child { font-weight: 600; color: var(--neg); }
+
+  /* ── Tech stack ── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .tech-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .tech-card .tech-name { font-weight: 700; font-size: 14px; color: var(--primary); }
+  .tech-card .tech-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Conclusion ── */
+  .conclusion-card {
+    background: linear-gradient(135deg, #e8f0fe, #f3e5f5);
+    border-radius: 16px;
+    padding: 36px;
+    border: 1px solid #c5cae9;
+  }
+  .conclusion-card h3 {
+    color: #3949ab;
+    margin-top: 0;
+  }
+  .conclusion-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .conclusion-stat {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .conclusion-stat .val {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .conclusion-stat .lbl {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ── Page break ── */
+  .page-break { page-break-before: always; }
+
+  /* ── Print ── */
+  @media print {
+    .cover { page-break-after: always; }
+    section { page-break-inside: avoid; }
+    pre { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ COVER ══════════════════ -->
+<div class="cover">
+  <div class="cover-badge">Projet de Fin d'Études — PFE 2025–2026</div>
+  <h1>Analyse de Sentiment Multilingue des Commentaires Clients Tunisiens</h1>
+  <h2>Application d'Intelligence Artificielle avec MARBERT, LIME et Streamlit</h2>
+
+  <div class="cover-tags">
+    <span class="cover-tag">NLP</span>
+    <span class="cover-tag">Deep Learning</span>
+    <span class="cover-tag">MARBERT</span>
+    <span class="cover-tag">Arabizi</span>
+    <span class="cover-tag">LIME</span>
+    <span class="cover-tag">Streamlit</span>
+    <span class="cover-tag">Business Intelligence</span>
+  </div>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <label>Étudiant·e</label>
+      <span>[Ton nom]</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Encadrante</label>
+      <span>[Nom encadrante]</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Année universitaire</label>
+      <span>2025 – 2026</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Établissement</label>
+      <span>[Nom école]</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Cas d'usage</label>
+      <span>TOPNET Tunisie</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Dataset</label>
+      <span>2 581 commentaires</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ══════════════════ TABLE DES MATIÈRES ══════════════════ -->
+<div class="toc">
+  <h3>Table des matières</h3>
+  <ol>
+    <li><a href="#s1">Introduction et Contexte</a></li>
+    <li><a href="#s2">Architecture Globale du Système</a></li>
+    <li><a href="#s3">Modèle de Sentiment — MARBERT</a></li>
+    <li><a href="#s4">Données</a></li>
+    <li class="sub"><a href="#s4">4.1 Stratégie de collecte</a></li>
+    <li class="sub"><a href="#s4">4.2 Sources et fusion</a></li>
+    <li class="sub"><a href="#s4">4.3 Génération synthétique</a></li>
+    <li class="sub"><a href="#s4">4.4 Nettoyage avancé</a></li>
+    <li><a href="#s5">Pipeline de Traitement</a></li>
+    <li class="sub"><a href="#s5">5.1 Détection de langue</a></li>
+    <li class="sub"><a href="#s5">5.2 Traduction Groq</a></li>
+    <li class="sub"><a href="#s5">5.3 Prédiction MARBERT</a></li>
+    <li><a href="#s6">Explicabilité — LIME</a></li>
+    <li><a href="#s7">Application Streamlit</a></li>
+    <li><a href="#s8">Résultats</a></li>
+    <li><a href="#s9">Stack Technologique</a></li>
+    <li><a href="#s10">Structure des Fichiers</a></li>
+    <li><a href="#s11">Perspectives</a></li>
+    <li><a href="#s12">Conclusion</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════════ S1 ══════════════════ -->
+<section id="s1">
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <h2>Introduction et Contexte</h2>
+  </div>
+
+  <h3>1.1 Problématique</h3>
+  <p>Les entreprises tunisiennes reçoivent quotidiennement des centaines de commentaires clients sur leurs réseaux sociaux (Facebook, Instagram), rédigés dans un mélange unique de dialecte tunisien (Derja), d'Arabizi (arabe translittéré en caractères latins avec chiffres), de français et d'arabe standard. Cette réalité linguistique rend l'analyse manuelle impossible à grande échelle et les outils standard de NLP inadaptés.</p>
+
+  <div class="callout callout-key">
+    <div class="callout-title">💡 Problème central</div>
+    Comment extraire automatiquement la satisfaction client depuis des données textuelles tunisiennes multilingues non structurées, et la restituer sous forme de tableau de bord actionnable pour n'importe quelle entreprise ?
+  </div>
+
+  <h3>1.2 Objectifs du PFE</h3>
+  <ol style="padding-left:22px;line-height:2.2">
+    <li>Construire un <strong>pipeline NLP complet</strong> capable de traiter du texte tunisien quelle que soit sa langue (arabe, arabizi, français, anglais)</li>
+    <li>Déployer un <strong>modèle de classification de sentiment</strong> adapté au dialecte tunisien — 3 classes : positif / négatif / neutre</li>
+    <li>Intégrer un module <strong>d'explicabilité (LIME)</strong> pour justifier chaque prédiction du modèle</li>
+    <li>Livrer une <strong>application web générique</strong> où n'importe quelle entreprise peut uploader ses données et obtenir un dashboard d'analyse en temps réel</li>
+  </ol>
+</section>
+
+<!-- ══════════════════ S2 ══════════════════ -->
+<section id="s2">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <h2>Architecture Globale du Système</h2>
+  </div>
+
+  <div class="arch">
+    <div class="box">
+      <div class="step-label">ENTRÉE</div>
+      <div class="step-main">📂 Fichier CSV / JSON — Commentaires clients bruts (sans labels)</div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box">
+      <div class="step-label">ÉTAPE 1 — nettoyage_avance.ipynb</div>
+      <div class="step-main">🧹 Nettoyage Avancé</div>
+      <div class="step-sub">Suppression gibberish · répétitions · textes sans contenu · séquences aléatoires</div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box">
+      <div class="step-label">ÉTAPE 2 — detect_language()</div>
+      <div class="step-main">🌐 Détection de Langue</div>
+      <div class="step-sub">arabic → MARBERT directement &nbsp;|&nbsp; arabizi → MARBERT directement</div>
+      <div class="step-sub">français / anglais → Groq Llama-3.3 → traduction arabe → MARBERT</div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box">
+      <div class="step-label">ÉTAPE 3 — MARBERT fine-tuné (GPU CUDA)</div>
+      <div class="step-main">🤖 Prédiction de Sentiment</div>
+      <div class="step-sub">Entrée : texte arabe/arabizi · max 128 tokens · batch 32</div>
+      <div class="step-sub">Sortie : P(négatif) | P(neutre) | P(positif) — label = argmax</div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box">
+      <div class="step-label">ÉTAPE 4 (optionnel) — LIME Explorer</div>
+      <div class="step-main">🔬 Explicabilité LIME</div>
+      <div class="step-sub">500 perturbations par texte · top 10 mots influents · 3 graphiques par classe</div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box">
+      <div class="step-label">SORTIE — app.py Streamlit</div>
+      <div class="step-main">📊 Dashboard Interactif</div>
+      <div class="step-sub">Vue Globale · Analyse Détaillée · LIME Explorer · Données · Export CSV/JSON</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ S3 ══════════════════ -->
+<section id="s3">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <h2>Modèle de Sentiment — MARBERT</h2>
+  </div>
+
+  <h3>3.1 Choix du modèle</h3>
+  <p><strong>MARBERT</strong> (Multi-Dialect Arabic BERT) est un modèle Transformer pré-entraîné par le CAMeL Lab sur 1 milliard de tweets arabes dialectaux incluant des variantes tunisiennes, égyptiennes, marocaines et du Golfe. Il a été sélectionné pour sa capacité native à traiter l'arabe dialectal sans prétraitement supplémentaire.</p>
+
+  <table>
+    <thead><tr><th>Critère</th><th>MARBERT ✅</th><th>AraBERT</th><th>mBERT</th></tr></thead>
+    <tbody>
+      <tr><td>Dialectes arabes</td><td><strong>Natif</strong></td><td>Partiel</td><td>Minimal</td></tr>
+      <tr><td>Arabizi (latin+chiffres)</td><td><strong>Partiel</strong></td><td>❌</td><td>❌</td></tr>
+      <tr><td>Tunisien (Derja)</td><td><strong>Meilleur</strong></td><td>⚠️</td><td>❌</td></tr>
+      <tr><td>Paramètres</td><td>163M</td><td>163M</td><td>177M</td></tr>
+      <tr><td>Données pré-entraînement</td><td>1B tweets arabes</td><td>Presse arabe</td><td>104 langues</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Fine-tuning</h3>
+  <p>Le modèle a été fine-tuné sur un dataset annoté de commentaires tunisiens avec une étape spéciale de génération de données neutres pour rééquilibrer les classes :</p>
+
+  <table>
+    <thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead>
+    <tbody>
+      <tr><td>Classes</td><td><span class="badge badge-neg">0 — négatif</span> &nbsp;<span class="badge badge-neu">1 — neutre</span> &nbsp;<span class="badge badge-pos">2 — positif</span></td></tr>
+      <tr><td>Tokenisation</td><td>WordPiece · max 128 tokens</td></tr>
+      <tr><td>Optimiseur</td><td>AdamW</td></tr>
+      <tr><td>Nom du modèle sauvegardé</td><td><code class="inline-code">MARBERT-balanced-after-gen-neut</code></td></tr>
+      <tr><td>Format des poids</td><td>SafeTensors (converti depuis pytorch_model.bin)</td></tr>
+      <tr><td>Device d'inférence</td><td>CUDA (GPU) — PyTorch 2.5.1</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <div class="callout-title">📌 Note sur le suffixe "-balanced-after-gen-neut"</div>
+    La classe neutre est naturellement sous-représentée dans les commentaires clients. Une étape de génération de données neutres synthétiques a été ajoutée pendant l'entraînement pour équilibrer les 3 classes et éviter le biais vers les sentiments extrêmes.
+  </div>
+</section>
+
+<!-- ══════════════════ S4 ══════════════════ -->
+<section id="s4">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <h2>Données</h2>
+  </div>
+
+  <h3>4.1 Stratégie de collecte</h3>
+  <div class="callout callout-key">
+    <div class="callout-title">⚠️ Distinction fondamentale</div>
+    Les <strong>données d'entraînement</strong> (annotées, déjà utilisées pour fine-tuner MARBERT) sont distinctes des <strong>données de démo</strong> (brutes, sans labels). Les données de démo <em>ne doivent jamais avoir de labels pré-existants</em> — c'est MARBERT qui les crée. Mélanger les deux biaiserait l'évaluation du modèle.
+  </div>
+
+  <table>
+    <thead><tr><th>Type</th><th>Usage</th><th>Source</th><th>Labels</th></tr></thead>
+    <tbody>
+      <tr><td>Données d'entraînement</td><td>Fine-tuning MARBERT</td><td>Datasets annotés</td><td>✅ Oui (humains)</td></tr>
+      <tr><td>Données de démo</td><td>Dashboard Streamlit</td><td>Générées + scrappées</td><td>❌ Non → MARBERT prédit</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 Sources et fusion des données — Cas TOPNET Tunisie</h3>
+  <p>Cinq fichiers CSV et un fichier JSON ont été fusionnés après déduplication :</p>
+
+  <table>
+    <thead><tr><th>Fichier</th><th>Origine</th><th>Textes</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inline-code">topnet_book1.csv</code></td><td>Commentaires Facebook (Book 1)</td><td>443</td></tr>
+      <tr><td><code class="inline-code">topnet_book2.csv</code></td><td>Commentaires Facebook (Book 2)</td><td>500</td></tr>
+      <tr><td><code class="inline-code">topnet_tunisie.csv</code></td><td>Commentaires simulés clients FAI</td><td>500</td></tr>
+      <tr><td><code class="inline-code">topnet_comments.csv</code></td><td>Commentaires clients multilingues</td><td>500</td></tr>
+      <tr><td><code class="inline-code">topnet_comments_500.csv</code></td><td>Commentaires clients multilingues</td><td>500</td></tr>
+      <tr><td><code class="inline-code">topnet_facebook_500.json</code></td><td><strong>Générés</strong> — 500 commentaires Facebook synthétiques</td><td>500</td></tr>
+      <tr style="background:#e8f0fe;font-weight:600"><td>Total avant déduplication</td><td></td><td>2 943</td></tr>
+      <tr style="background:#e8f5e9;font-weight:600"><td>Total après déduplication</td><td></td><td>2 596</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-title">🔄 Remplacement Orange → TOPNET</div>
+    Les données initiales référençaient Orange Tunisie (interdit par l'encadrante — risque de plagiat). Un script Python a effectué le remplacement systématique : "Orange Tunisie" → "Topnet Tunisie", "Orange" → "Topnet", "orange" → "topnet" dans les 5 fichiers CSV, modifiant 336 textes sur 2 443.
+  </div>
+
+  <h3>4.3 Génération des données synthétiques</h3>
+  <p>Pour disposer de données réalistes sans risque de plagiat, 500 commentaires Facebook ont été générés programmatiquement (<code class="inline-code">gen_topnet.py</code>) :</p>
+
+  <table>
+    <thead><tr><th>Composant</th><th>Détail</th></tr></thead>
+    <tbody>
+      <tr><td>Noms d'utilisateurs</td><td>80 prénoms × 57 noms tunisiens → combinaisons uniques</td></tr>
+      <tr><td>Catégories</td><td>Plaintes connexion · SAV · Concours · Satisfaction · Questions techniques · Ramadan · Été · Rentrée · Décembre · Comparaisons</td></tr>
+      <tr><td>Langues</td><td>Arabizi · Arabe · Français — mélangés dans le même commentaire</td></tr>
+      <tr><td>Pics temporels Ramadan</td><td>55 commentaires chacun (2023 et 2024)</td></tr>
+      <tr><td>Pics été</td><td>60 commentaires chacun (juillet–août 2023 et 2024)</td></tr>
+      <tr><td>Pics septembre / décembre</td><td>35 / 30 commentaires par période</td></tr>
+      <tr><td>Format JSON</td><td><code class="inline-code">{"id", "username", "date", "text"}</code> — aucun label</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 Nettoyage Avancé</h3>
+  <p>Le notebook <code class="inline-code">nettoyage_avance.ipynb</code> a été rendu paramétrable (INPUT_CSV / OUTPUT_CSV en haut de fichier) et applique 5 filtres séquentiels :</p>
+
+<pre><code>def should_keep(text):
+    if has_no_real_content(text):  return False  # ni arabe ni latin
+    if has_gibberish_latin(text):  return False  # ≥ 7 consonnes consécutives
+    if is_gibberish_random(text):  return False  # mot 15+ chars sans voyelle
+    if has_high_char_repeat(text): return False  # 1 char > 28% du texte
+    if has_repetitive_words(text): return False  # 1 mot > 45% des mots
+    return True</code></pre>
+
+  <p><strong>Résultats sur le dataset TOPNET :</strong></p>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><span class="kpi-val" style="color:var(--primary)">2 596</span><span class="kpi-lbl">Avant nettoyage</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--pos)">2 581</span><span class="kpi-lbl">Conservés (99.4%)</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--neg)">15</span><span class="kpi-lbl">Supprimés (0.6%)</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--neu)">44 car.</span><span class="kpi-lbl">Longueur moyenne</span></div>
+  </div>
+</section>
+
+<!-- ══════════════════ S5 ══════════════════ -->
+<section id="s5">
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <h2>Pipeline de Traitement</h2>
+  </div>
+
+  <h3>5.1 Détection de Langue</h3>
+  <p>La détection opère en cascade de priorité décroissante :</p>
+
+<pre><code>def detect_language(text):
+    # 1. Ratio caractères arabes > 25% → arabic (envoi direct à MARBERT)
+    if arabic_chars / total_chars > 0.25:
+        return 'arabic'
+
+    # 2. Score Arabizi (chiffres-lettres tunisiens + lexique)
+    score  = occurrences([3,7,9]) × 2   # 3=ع  7=ح  9=ق  (marqueurs forts)
+    score += occurrences([4,8])          # 4=غ  8=   (marqueurs modérés)
+    score += mots_tunisiens_reconnus × 3 # barcha, mriguel, kifech...
+    if score >= 3: return 'arabizi'
+
+    # 3. langdetect (bibliothèque) pour français/anglais
+    lang = langdetect.detect(text)
+    if lang == 'fr': return 'french'
+    if lang == 'en': return 'english'
+
+    return 'arabizi'  # défaut sécurisé → MARBERT le gère</code></pre>
+
+  <p>Le <strong>lexique Arabizi tunisien</strong> contient 50+ mots caractéristiques : <code class="inline-code">barcha, mriguel, kifech, shkoun, wesh, bahi, brabi, sahbi, inchallah, mabrouk</code>…</p>
+
+  <p><strong>Résultats sur les 2 581 textes :</strong></p>
+
+  <div class="stat-bar-row">
+    <div class="stat-bar-label"><span>🔡 Arabizi</span><span><strong>1 453</strong> — 56.3%</span></div>
+    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:56.3%;background:#fbbc04"></div></div>
+  </div>
+  <div class="stat-bar-row">
+    <div class="stat-bar-label"><span>🔤 Arabe</span><span><strong>696</strong> — 27.0%</span></div>
+    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:27%;background:#4285f4"></div></div>
+  </div>
+  <div class="stat-bar-row">
+    <div class="stat-bar-label"><span>🇫🇷 Français</span><span><strong>305</strong> — 11.8%</span></div>
+    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:11.8%;background:#34a853"></div></div>
+  </div>
+  <div class="stat-bar-row">
+    <div class="stat-bar-label"><span>🇬🇧 Anglais</span><span><strong>127</strong> — 4.9%</span></div>
+    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:4.9%;background:#ea4335"></div></div>
+  </div>
+
+  <h3>5.2 Traduction Groq API</h3>
+  <p>Les <strong>432 textes</strong> français et anglais (16.7%) sont traduits en arabe avant la prédiction. La traduction utilise <strong>Llama-3.3-70B-Versatile</strong> via l'API Groq avec un prompt zéro-shot :</p>
+
+<pre><code>"Traduis ce texte en arabe. Réponds uniquement avec la traduction arabe,
+sans explication. Texte : {text}"</code></pre>
+
+  <p>Un délai de 300ms entre chaque appel respecte les limites de débit. En cas d'échec de l'API, le texte original est transmis à MARBERT (fallback gracieux).</p>
+
+  <h3>5.3 Prédiction MARBERT en Batch</h3>
+  <p>Les textes sont traités en batches de 32 pour optimiser l'utilisation du GPU :</p>
+
+<pre><code>def predict_batch(texts, tokenizer, model, device):
+    enc = tokenizer(
+        texts, return_tensors='pt',
+        padding=True, truncation=True, max_length=128
+    ).to(device)
+    with torch.no_grad():
+        logits = model(**enc).logits
+    return softmax(logits, dim=-1).numpy()  # shape (N, 3)</code></pre>
+
+  <p>Le script <code class="inline-code">run_predictions.py</code> implémente un <strong>système de checkpoint</strong> : sauvegarde automatique tous les 200 textes dans le CSV de sortie. Si le processus est interrompu, il reprend à l'index où il s'était arrêté.</p>
+</section>
+
+<!-- ══════════════════ S6 ══════════════════ -->
+<section id="s6">
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <h2>Explicabilité — LIME</h2>
+  </div>
+
+  <h3>6.1 Principe de LIME</h3>
+  <p>LIME (<em>Local Interpretable Model-Agnostic Explanations</em>) génère des explications locales en perturbant aléatoirement le texte d'entrée (masquage de mots) et en observant l'impact sur les probabilités de prédiction. Il entraîne un modèle linéaire local (interprétable) pour approximer le comportement du modèle noir (MARBERT) autour de ce texte spécifique.</p>
+
+  <table>
+    <thead><tr><th>Paramètre</th><th>Valeur choisie</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inline-code">bow=False</code></td><td>Désactivé</td><td>Préserve l'ordre des mots — crucial pour l'arabe</td></tr>
+      <tr><td><code class="inline-code">num_samples</code></td><td>500</td><td>Équilibre précision / temps de calcul</td></tr>
+      <tr><td><code class="inline-code">num_features</code></td><td>10</td><td>Top 10 mots influents par classe</td></tr>
+      <tr><td><code class="inline-code">labels</code></td><td>[0, 1, 2]</td><td>Explication pour les 3 classes simultanément</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 Lecture des résultats LIME</h3>
+  <p>Pour chaque texte analysé, 3 graphiques horizontaux sont affichés (un par classe) :</p>
+  <ul style="padding-left:22px;line-height:2.2">
+    <li><strong>Barres colorées (couleur du sentiment)</strong> → mots qui <em>poussent</em> vers cette classe</li>
+    <li><strong>Barres grises</strong> → mots qui <em>s'opposent</em> à cette classe</li>
+    <li>La classe prédite est marquée <em>"← PRÉDIT"</em></li>
+  </ul>
+
+  <div class="callout callout-success">
+    <div class="callout-title">🎯 Valeur pour la soutenance</div>
+    LIME permet de répondre à la question du jury : <em>"Comment le modèle prend-il sa décision ?"</em>. C'est ce qui différencie ce PFE d'un simple classifieur boîte noire — l'explicabilité est une exigence croissante en IA responsable (EU AI Act).
+  </div>
+</section>
+
+<!-- ══════════════════ S7 ══════════════════ -->
+<section id="s7">
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <h2>Application Streamlit</h2>
+  </div>
+
+  <h3>7.1 Architecture de l'application</h3>
+
+<pre><code>app.py
+├── load_model()           ← @st.cache_resource — chargé une seule fois au démarrage
+├── nettoyer_texte()       ← Mêmes filtres que nettoyage_avance.ipynb
+├── detect_language()      ← Cascade arabic → arabizi → fr/en
+├── lancer_analyse()       ← Pipeline complet avec barre de progression temps réel
+├── top_mots()             ← Analyse fréquentielle (stopwords fr + arabizi + ar)
+└── afficher_dashboard()
+    ├── 📈 Vue Globale      ← KPIs + donut + langues + confiance + mots récurrents
+    ├── 🔍 Analyse Détaillée ← Exemples par sentiment + tableau + export
+    ├── 🔬 LIME Explorer    ← Explication individuelle par texte
+    └── 📁 Données         ← Dataset complet + export CSV/JSON</code></pre>
+
+  <h3>7.2 Fonctionnalités par page</h3>
+
+  <h4>📈 Vue Globale</h4>
+  <ul style="padding-left:22px;line-height:2">
+    <li>5 KPIs : total, %positif, %négatif, %neutre, <strong>NSS</strong> (Net Sentiment Score = (pos−neg)/total×100)</li>
+    <li>Donut chart de répartition des sentiments</li>
+    <li>Bar chart des langues détectées</li>
+    <li>Histogramme de confiance du modèle</li>
+    <li><strong>Top 15 mots par sentiment</strong> — négatif / positif / neutre (graphiques horizontaux)</li>
+    <li><strong>Graphique miroir</strong> — mots exclusivement positifs vs exclusivement négatifs</li>
+  </ul>
+
+  <h4>🔍 Analyse Détaillée</h4>
+  <ul style="padding-left:22px;line-height:2">
+    <li>Top 5 exemples par sentiment, triés par confiance décroissante</li>
+    <li>Cartes colorées adaptées au thème (light/dark/system)</li>
+    <li>Tableau filtrable avec toutes les colonnes</li>
+    <li>Export CSV des résultats filtrés</li>
+  </ul>
+
+  <h4>🔬 LIME Explorer</h4>
+  <ul style="padding-left:22px;line-height:2">
+    <li>Mode 1 : sélectionner un commentaire depuis les résultats</li>
+    <li>Mode 2 : saisir un texte libre (traduit automatiquement si fr/en)</li>
+    <li>Calcul LIME (~20 secondes) avec 3 graphiques d'importance</li>
+  </ul>
+
+  <h4>📁 Données</h4>
+  <ul style="padding-left:22px;line-height:2">
+    <li>Tableau complet (id, text, langue, texte_marbert, sentiment, confiance, prob_neg, prob_neu, prob_pos)</li>
+    <li>Export CSV et JSON en un clic</li>
+  </ul>
+
+  <h3>7.3 Généricité — N'importe quel client</h3>
+  <p>L'application accepte automatiquement les colonnes nommées : <code class="inline-code">text</code>, <code class="inline-code">texte</code>, <code class="inline-code">comment</code>, <code class="inline-code">commentaire</code>, <code class="inline-code">message</code>, <code class="inline-code">content</code>. Les formats CSV (UTF-8, UTF-8-BOM, Latin-1, CP1252) et JSON/JSONL sont supportés.</p>
+
+  <div class="callout callout-key">
+    <div class="callout-title">🚀 Commande de lancement</div>
+    <code>C:\Users\emnam\anaconda3\envs\dl-gpu\Scripts\streamlit.exe run app.py</code><br><br>
+    Ou double-clic sur <code class="inline-code">lancer_app.bat</code> → ouvrir <code class="inline-code">http://localhost:8501</code>
+  </div>
+</section>
+
+<!-- ══════════════════ S8 ══════════════════ -->
+<section id="s8">
+  <div class="section-header">
+    <div class="section-number">8</div>
+    <h2>Résultats</h2>
+  </div>
+
+  <h3>8.1 Prédictions MARBERT — Dataset TOPNET (2 581 textes)</h3>
+
+  <div class="kpi-row">
+    <div class="kpi"><span class="kpi-val" style="color:var(--primary)">2 581</span><span class="kpi-lbl">Textes analysés</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--pos)">48.7%</span><span class="kpi-lbl">😊 Positif (1 257)</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--neg)">29.8%</span><span class="kpi-lbl">😠 Négatif (769)</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--neu)">21.5%</span><span class="kpi-lbl">😐 Neutre (555)</span></div>
+    <div class="kpi"><span class="kpi-val" style="color:var(--primary)">+18.9</span><span class="kpi-lbl">NSS (pts)</span></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Métrique de confiance</th><th>Valeur</th><th>Interprétation</th></tr></thead>
+    <tbody>
+      <tr><td>Confiance moyenne</td><td><strong>93.0%</strong></td><td>Le modèle est très sûr de ses prédictions</td></tr>
+      <tr><td>Confiance ≥ 90%</td><td>2 027 (78.5%)</td><td>Prédictions très fiables</td></tr>
+      <tr><td>Confiance ≥ 70%</td><td>2 363 (91.6%)</td><td>Prédictions acceptables</td></tr>
+      <tr><td>Confiance &lt; 70%</td><td>218 (8.4%)</td><td>Cas ambigus — à examiner manuellement</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 Mots récurrents par sentiment</h3>
+
+  <p><strong>Commentaires négatifs</strong> — sujets d'insatisfaction :</p>
+  <div class="word-tags">
+    <span class="word-tag word-tag-neg">connexion</span>
+    <span class="word-tag word-tag-neg">coupure</span>
+    <span class="word-tag word-tag-neg">bata2 (lent)</span>
+    <span class="word-tag word-tag-neg">ta7 (tombé)</span>
+    <span class="word-tag word-tag-neg">ma5demch (ne marche pas)</span>
+    <span class="word-tag word-tag-neg">teknicien</span>
+    <span class="word-tag word-tag-neg">service client</span>
+    <span class="word-tag word-tag-neg">wifi</span>
+    <span class="word-tag word-tag-neg">debit</span>
+  </div>
+
+  <p><strong>Commentaires positifs</strong> — sources de satisfaction :</p>
+  <div class="word-tags">
+    <span class="word-tag word-tag-pos">merci</span>
+    <span class="word-tag word-tag-pos">mriguel (bien)</span>
+    <span class="word-tag word-tag-pos">chokran</span>
+    <span class="word-tag word-tag-pos">behia (bien)</span>
+    <span class="word-tag word-tag-pos">weld 7lel (bravo)</span>
+    <span class="word-tag word-tag-pos">bravo</span>
+    <span class="word-tag word-tag-pos">offre</span>
+    <span class="word-tag word-tag-pos">prix</span>
+    <span class="word-tag word-tag-pos">service</span>
+  </div>
+
+  <div class="callout callout-key">
+    <div class="callout-title">📊 Lecture métier pour TOPNET</div>
+    Les insatisfactions se concentrent sur la <strong>qualité de la connexion</strong> (coupures, lenteur, WiFi instable) et la <strong>réactivité du service technique</strong>. La satisfaction est principalement exprimée envers le <strong>rapport qualité/prix</strong> et le <strong>service client</strong>. NSS = +18.9 pts indique une satisfaction nette positive malgré les plaintes techniques.
+  </div>
+
+  <h3>8.3 Limites identifiées</h3>
+
+  <table class="limit-row">
+    <thead><tr><th>Limitation</th><th>Exemple</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Arabizi positif mal classé</td>
+        <td>"Service client yraddou... <em>mrigul</em>" → NEGATIF</td>
+        <td>Moyen</td>
+      </tr>
+      <tr>
+        <td>Sarcasme non détecté</td>
+        <td>"Bravo topnet 😒" → POSITIF</td>
+        <td>Faible</td>
+      </tr>
+      <tr>
+        <td>Contexte vs mot clé</td>
+        <td>"C'est dommage, l'app kenet <em>a7la</em>" → POSITIF (a7la=beau en arabe)</td>
+        <td>Faible</td>
+      </tr>
+      <tr>
+        <td>Textes trop courts</td>
+        <td>"👍" ou "top" → confiance faible (&lt;70%)</td>
+        <td>Faible</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-title">⚠️ Contexte de ces erreurs</div>
+    Ces erreurs sont <strong>attendues et normales</strong> pour un modèle traitant de l'Arabizi — dialecte parmi les plus difficiles en NLP. Même les modèles commerciaux (GPT-4, Azure Cognitive Services) produisent des erreurs similaires sur le tunisien. Les 8.4% de prédictions à faible confiance sont précisément les cas où le modèle signale lui-même son incertitude.
+  </div>
+</section>
+
+<!-- ══════════════════ S9 ══════════════════ -->
+<section id="s9">
+  <div class="section-header">
+    <div class="section-number">9</div>
+    <h2>Stack Technologique</h2>
+  </div>
+
+  <div class="tech-grid">
+    <div class="tech-card">
+      <div class="tech-name">MARBERT</div>
+      <div class="tech-desc">Transformers 5.5.0 — modèle NLP Arabic fine-tuné</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">PyTorch + CUDA</div>
+      <div class="tech-desc">v2.5.1 — inférence GPU accélérée</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Groq API</div>
+      <div class="tech-desc">Llama-3.3-70B — traduction fr/en → arabe</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">LIME</div>
+      <div class="tech-desc">lime-text — explicabilité locale par perturbation</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Streamlit</div>
+      <div class="tech-desc">Interface web Python — upload + dashboard</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Plotly</div>
+      <div class="tech-desc">Visualisations interactives (donut, bar, histogram)</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">SafeTensors</div>
+      <div class="tech-desc">Format sécurisé pour les poids du modèle</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">langdetect</div>
+      <div class="tech-desc">Détection automatique fr/en en fallback</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Pandas + NumPy</div>
+      <div class="tech-desc">Traitement et manipulation des données</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ S10 ══════════════════ -->
+<section id="s10">
+  <div class="section-header">
+    <div class="section-number">10</div>
+    <h2>Structure des Fichiers Livrés</h2>
+  </div>
+
+  <div class="filetree">
+    <span class="dir">HOPE/</span><br>
+    ├── <span class="file">app.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Application Streamlit principale</span><br>
+    ├── <span class="file">run_predictions.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Script batch prédictions MARBERT (checkpoint)</span><br>
+    ├── <span class="file">nettoyage_avance.ipynb</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Notebook nettoyage (paramétrable)</span><br>
+    ├── <span class="file">pipeline.ipynb</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Pipeline complet + LIME interactif</span><br>
+    ├── <span class="file">gen_topnet.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Générateur 500 commentaires synthétiques</span><br>
+    ├── <span class="file">lancer_app.bat</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Script lancement Windows (double-clic)</span><br>
+    ├── <span class="dir">models/</span><br>
+    │ &nbsp;&nbsp;&nbsp;└── <span class="dir">MARBERT-balanced-after-gen-neut/</span><br>
+    │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">model.safetensors</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Poids du modèle (621 MB)</span><br>
+    │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">config.json</span><br>
+    │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">tokenizer.json</span><br>
+    │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">vocab.txt</span><br>
+    └── <span class="dir">DATA TOPNET/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">topnet_facebook_500.json</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← 500 commentaires synthétiques générés</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">topnet_all.csv</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Dataset fusionné (2 596 textes, 147 KB)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">topnet_all_clean.csv</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← Après nettoyage avancé (2 581 textes)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">topnet_all_predictions.csv</span> &nbsp;&nbsp;<span class="comment">← Prédictions MARBERT finales</span><br>
+  </div>
+</section>
+
+<!-- ══════════════════ S11 ══════════════════ -->
+<section id="s11">
+  <div class="section-header">
+    <div class="section-number">11</div>
+    <h2>Perspectives</h2>
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Perspective</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Amélioration données arabizi</strong> — Augmenter les données d'entraînement en arabizi pur avec annotations humaines pour réduire les erreurs sur les mots positifs tunisiens (mriguel, 3aychek, yhazik)</td><td>Élevé</td></tr>
+      <tr><td>2</td><td><strong>Détection du sarcasme</strong> — Ajouter une couche de classification sarcasme/ironie en pré-traitement pour éviter les inversions de sentiment</td><td>Moyen</td></tr>
+      <tr><td>3</td><td><strong>Analyse temporelle</strong> — Exploiter les dates des commentaires pour visualiser l'évolution du NSS dans le temps (pic de mécontentement = incident ?) </td><td>Élevé</td></tr>
+      <tr><td>4</td><td><strong>Déploiement Streamlit Cloud</strong> — URL publique gratuite pour le jury et les présentations sans installation locale</td><td>Élevé</td></tr>
+      <tr><td>5</td><td><strong>API REST</strong> — Exposer le pipeline via FastAPI pour intégration dans des systèmes CRM existants</td><td>Moyen</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════ S12 ══════════════════ -->
+<section id="s12">
+  <div class="section-header">
+    <div class="section-number">12</div>
+    <h2>Conclusion</h2>
+  </div>
+
+  <div class="conclusion-card">
+    <h3>Bilan du projet</h3>
+    <p>Ce projet a permis de construire un <strong>système complet d'analyse de sentiment</strong> adapté à la réalité linguistique tunisienne, de la collecte des données brutes jusqu'au tableau de bord interactif. Le pipeline automatisé — nettoyage, détection de langue, traduction, classification MARBERT, explicabilité LIME — traite 2 581 commentaires avec une confiance moyenne de 93% et se présente au travers d'une application Streamlit entièrement générique, réutilisable par n'importe quelle entreprise tunisienne sans modifier une ligne de code.</p>
+
+    <p style="margin-top:14px">La valeur technique du projet réside dans la maîtrise de trois défis simultanés : le <strong>multilinguisme</strong> (arabe / arabizi / français / anglais dans un même dataset), l'<strong>explicabilité</strong> (LIME justifie chaque décision du modèle), et la <strong>généricité</strong> (architecture pipeline-as-a-service applicable à tout secteur).</p>
+
+    <div class="conclusion-stats">
+      <div class="conclusion-stat">
+        <div class="val">2 581</div>
+        <div class="lbl">Textes analysés</div>
+      </div>
+      <div class="conclusion-stat">
+        <div class="val">93%</div>
+        <div class="lbl">Confiance moyenne</div>
+      </div>
+      <div class="conclusion-stat">
+        <div class="val">4</div>
+        <div class="lbl">Langues supportées</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div style="background:var(--surface);border-top:1px solid var(--border);padding:20px 40px;text-align:center;color:var(--muted);font-size:12px;margin-top:40px">
+  PFE 2025–2026 &nbsp;·&nbsp; Analyse de Sentiment Multilingue Tunisien &nbsp;·&nbsp; MARBERT + LIME + Streamlit
+</div>
+
+</body>
+</html>

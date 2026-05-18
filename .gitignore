@@ -1,0 +1,34 @@
+# ── Secrets ──────────────────────────────────────────────────────────────────
+.env
+*.key
+secrets.json
+
+# ── Model weights (trop lourds pour GitHub — stocker sur HuggingFace/Drive) ──
+models/
+*.bin
+*.safetensors
+*.pt
+*.ckpt
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Données brutes (optionnel — décommenter si trop lourdes) ─────────────────
+# data/

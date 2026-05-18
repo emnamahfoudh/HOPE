@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HOPE — Pipeline d'Analyse de Sentiment Tunisien</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: #1a1a2e;
+      background: #f9f9f7;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 60px auto;
+      background: #ffffff;
+      padding: 70px 80px;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+      border-radius: 4px;
+    }
+
+    /* ── Header ── */
+    .chapter-label {
+      font-family: 'Arial', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #7c6f9f;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #12102b;
+      border-bottom: 3px solid #7c6f9f;
+      padding-bottom: 16px;
+      margin-bottom: 40px;
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-family: 'Arial', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #12102b;
+      margin-top: 48px;
+      margin-bottom: 14px;
+      padding-left: 14px;
+      border-left: 4px solid #7c6f9f;
+    }
+
+    h3 {
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #444;
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      text-align: justify;
+    }
+
+    ul, ol {
+      margin: 10px 0 14px 24px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    strong { color: #12102b; }
+
+    em { color: #555; }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0 28px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+    }
+
+    thead tr {
+      background: #7c6f9f;
+      color: #fff;
+    }
+
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    tbody tr:nth-child(even) { background: #f4f2fb; }
+    tbody tr:hover { background: #ece8f7; }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e4e0f0;
+    }
+
+    /* ── Code / Pipeline ── */
+    pre {
+      background: #1e1b2e;
+      color: #c8c0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 22px 26px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 20px 0 28px;
+    }
+
+    code {
+      background: #f0edfb;
+      color: #5a3e9e;
+      font-family: 'Courier New', monospace;
+      font-size: 13.5px;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* ── Callout box ── */
+    .callout {
+      background: #f4f2fb;
+      border-left: 4px solid #7c6f9f;
+      padding: 14px 18px;
+      border-radius: 0 4px 4px 0;
+      margin: 20px 0 28px;
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+      color: #3a3060;
+    }
+
+    .callout strong { color: #5a3e9e; }
+
+    /* ── Limits / Improvements ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0 28px;
+    }
+
+    .card {
+      background: #fafaf8;
+      border: 1px solid #e0ddf0;
+      border-radius: 6px;
+      padding: 18px 20px;
+    }
+
+    .card h4 {
+      font-family: 'Arial', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .card.red h4   { color: #c0392b; }
+    .card.green h4 { color: #27ae60; }
+
+    .card ul { margin-left: 18px; font-size: 14px; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #e0ddf0;
+      font-family: 'Arial', sans-serif;
+      font-size: 12px;
+      color: #999;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="chapter-label">Chapitre</div>
+  <h1>Pipeline d'Analyse de Sentiment pour le Dialecte Tunisien &mdash; HOPE</h1>
+
+  <!-- ══ 1. Contexte ══ -->
+  <h2>1. Contexte et motivation</h2>
+
+  <p>
+    L'analyse de sentiment consiste à déterminer automatiquement la polarité émotionnelle d'un texte
+    &mdash; positive, négative ou neutre. Cette tâche est aujourd'hui bien maîtrisée pour les langues
+    à ressources abondantes comme l'anglais ou le français, grâce à des corpus annotés massifs et des
+    modèles pré-entraînés performants. Le dialecte tunisien, en revanche, présente des défis
+    spécifiques qui le placent dans la catégorie des langues dites <em>«&nbsp;sous-ressourcées&nbsp;»
+    (low-resource)</em>.
+  </p>
+
+  <p>
+    Les utilisateurs tunisiens sur les réseaux sociaux s'expriment dans au moins trois registres
+    distincts et souvent mélangés :
+  </p>
+
+  <ul>
+    <li><strong>L'arabe dialectal tunisien</strong> en script arabe (دارجة),</li>
+    <li>
+      <strong>L'arabizi</strong>, une transcription phonétique de l'arabe en caractères latins
+      avec substitution de chiffres (3&nbsp;=&nbsp;ع, 7&nbsp;=&nbsp;ح, 9&nbsp;=&nbsp;ق, etc.),
+    </li>
+    <li>
+      <strong>Le français et l'anglais</strong>, utilisés seuls ou en alternance codique
+      (<em>code-switching</em>) avec le tunisien.
+    </li>
+  </ul>
+
+  <p>
+    Cette hétérogénéité rend les approches classiques inopérantes : un modèle entraîné sur l'arabe
+    standard moderne ne comprend pas l'arabizi, et un modèle multilingue généraliste peine à saisir
+    les nuances d'un dialecte aussi spécifique. L'objectif du projet HOPE est de construire un
+    pipeline complet capable de traiter ces trois registres de façon transparente pour l'utilisateur.
+  </p>
+
+  <!-- ══ 2. Données ══ -->
+  <h2>2. Données</h2>
+
+  <p>
+    Le jeu de données regroupe des commentaires issus de plateformes sociales tunisiennes, annotés
+    manuellement en trois classes de sentiment : <strong>positif</strong>, <strong>négatif</strong>
+    et <strong>neutre</strong>.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ensemble</th>
+          <th>Taille</th>
+          <th>Positif</th>
+          <th>Négatif</th>
+          <th>Neutre</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Entraînement</td>
+          <td>72&nbsp;038</td>
+          <td>31&nbsp;678&nbsp;&nbsp;<em>(44 %)</em></td>
+          <td>25&nbsp;108&nbsp;&nbsp;<em>(35 %)</em></td>
+          <td>15&nbsp;252&nbsp;&nbsp;<em>(21 %)</em></td>
+        </tr>
+        <tr>
+          <td>Test</td>
+          <td>12&nbsp;555</td>
+          <td>6&nbsp;789&nbsp;&nbsp;<em>(54 %)</em></td>
+          <td>5&nbsp;380&nbsp;&nbsp;<em>(43 %)</em></td>
+          <td>386&nbsp;&nbsp;<em>(3 %)</em></td>
+        </tr>
+        <tr>
+          <td>Validation</td>
+          <td>12&nbsp;555</td>
+          <td>6&nbsp;789&nbsp;&nbsp;<em>(54 %)</em></td>
+          <td>5&nbsp;380&nbsp;&nbsp;<em>(43 %)</em></td>
+          <td>386&nbsp;&nbsp;<em>(3 %)</em></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Déséquilibre de la classe neutre.</strong> La classe neutre ne représente que 3 % des
+    ensembles de test et de validation, contre 21 % dans l'entraînement. Ce problème récurrent dans
+    les corpus de sentiment arabes dialectaux a été traité lors du fine-tuning par une stratégie
+    d'équilibrage avec génération de données synthétiques neutres, comme l'indique le nom du modèle
+    final : <code>MARBERT-balanced-after-gen-neut</code>.
+  </div>
+
+  <!-- ══ 3. Architecture ══ -->
+  <h2>3. Architecture du pipeline</h2>
+
+  <p>
+    Le pipeline est conçu autour d'un principe central : <strong>un seul modèle de sentiment</strong>,
+    MarBERT, reçoit en entrée uniquement du texte en arabe ou arabizi. La traduction n'est qu'un
+    pré-traitement, pas une brique de classification parallèle.
+  </p>
+
+<pre>
+Texte entrant
+      │
+      ▼
+┌─────────────────────────────────────┐
+│  Détecteur de langue                │
+│  (règles Arabizi + langdetect)      │
+└──────────┬──────────────────────────┘
+           │
+    ┌──────┴──────┐
+    │             │
+  Arabe /      Français /
+  Arabizi      Anglais
+    │             │
+    │             ▼
+    │    ┌─────────────────────┐
+    │    │  Traduction         │
+    │    │  Groq / Llama 3.3   │
+    │    │  → Arabe            │
+    │    └────────┬────────────┘
+    │             │
+    └──────┬──────┘
+           ▼
+  ┌────────────────────┐
+  │  MarBERT fine-tuné │
+  │  (3 classes)       │
+  └────────┬───────────┘
+           ▼
+  ┌────────────────────┐
+  │  LIME              │
+  │  (explicabilité)   │
+  └────────────────────┘
+</pre>
+
+  <!-- 3.1 -->
+  <h3>3.1 &nbsp;Détection de langue</h3>
+
+  <p>
+    Le détecteur est une composante hybride combinant deux mécanismes complémentaires.
+  </p>
+
+  <p>
+    <strong>Règles linguistiques spécifiques à l'arabizi.</strong>
+    L'arabizi est quasi-impossible à identifier avec des outils généralistes comme
+    <code>langdetect</code>, qui le confond souvent avec du latin ou du maltais.
+    La solution adoptée est un système de scoring basé sur :
+  </p>
+
+  <ul>
+    <li>La présence de chiffres typiques (3, 7, 9) utilisés comme substituts de lettres arabes,</li>
+    <li>
+      La reconnaissance d'un lexique de mots-clés tunisiens
+      (<code>barcha</code>, <code>bahi</code>, <code>mta3</code>, <code>9dar</code>,
+      <code>aslema</code>&hellip;).
+    </li>
+  </ul>
+
+  <p>
+    Un score &ge;&nbsp;3 suffit à classifier le texte comme arabizi et à le router directement vers
+    MarBERT sans traduction.
+  </p>
+
+  <p>
+    <strong><code>langdetect</code> pour le reste.</strong>
+    Une fois l'arabe en script natif détecté (ratio de caractères Unicode arabes &gt;&nbsp;25&nbsp;%)
+    et l'arabizi identifié par scoring, <code>langdetect</code> gère les textes latins restants pour
+    distinguer le français de l'anglais.
+  </p>
+
+  <!-- 3.2 -->
+  <h3>3.2 &nbsp;Traduction via Groq (Llama 3.3 70B)</h3>
+
+  <p>
+    Lorsque le texte est détecté comme français ou anglais, il est traduit en arabe via l'API Groq,
+    qui expose le modèle <strong>Llama 3.3 70B Versatile</strong> avec une latence très faible.
+    Le prompt est volontairement minimaliste et directif pour éviter toute glose dans la réponse :
+  </p>
+
+<pre>
+Traduis ce texte en arabe. Réponds uniquement avec
+la traduction arabe, sans explication.
+
+Texte : {text}
+Traduction arabe :
+</pre>
+
+  <p>
+    En cas d'échec de l'API (réseau, quota&hellip;), un mécanisme de <em>fallback</em> renvoie le
+    texte original tel quel à MarBERT, qui reste capable de traiter du texte non-arabe de façon
+    dégradée.
+  </p>
+
+  <!-- 3.3 -->
+  <h3>3.3 &nbsp;Modèle de sentiment : MarBERT</h3>
+
+  <p>
+    Le cœur du système est <strong>MarBERT</strong> (<em>Multi-dialect Arabic BERT</em>), un modèle
+    de la famille BERT pré-entraîné par CAMeL Lab sur 1 milliard de tokens d'arabe dialectal et
+    moderne. Il dispose d'un vocabulaire de 100&nbsp;000 sous-mots, ce qui lui permet de couvrir
+    à la fois l'arabe standard et les dialectes maghrébins.
+  </p>
+
+  <p>
+    Ce modèle a été <strong>fine-tuné</strong> sur le corpus tunisien décrit en section&nbsp;2,
+    avec une tête de classification à 3 sorties. L'activation softmax sur les logits fournit des
+    probabilités calibrées pour chaque classe.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Paramètre</th><th>Valeur</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Architecture</td><td>BERT (BertForSequenceClassification)</td></tr>
+        <tr><td>Couches Transformer</td><td>12</td></tr>
+        <tr><td>Têtes d'attention</td><td>12</td></tr>
+        <tr><td>Dimension cachée</td><td>768</td></tr>
+        <tr><td>Taille du vocabulaire</td><td>100&nbsp;000 tokens</td></tr>
+        <tr><td>Longueur max. de séquence</td><td>512 tokens (tronqué à 128 en inférence)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3.4 -->
+  <h3>3.4 &nbsp;Explicabilité avec LIME</h3>
+
+  <p>
+    Pour ne pas produire une «&nbsp;boîte noire&nbsp;», le pipeline intègre
+    <strong>LIME</strong> (<em>Local Interpretable Model-agnostic Explanations</em>).
+    LIME génère des perturbations locales du texte d'entrée en masquant des mots aléatoirement,
+    observe comment les prédictions de MarBERT varient, et en déduit une importance par mot pour
+    chaque classe.
+  </p>
+
+  <p>
+    Le résultat est une visualisation indiquant quels mots ont <strong>poussé</strong> le modèle
+    vers la classe prédite et lesquels ont joué <strong>contre</strong> elle. Cette composante est
+    particulièrement utile pour valider que le modèle s'appuie sur des indices linguistiques
+    pertinents et non sur des artefacts du corpus.
+  </p>
+
+  <!-- ══ 4. Justification ══ -->
+  <h2>4. Justification des choix techniques</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Choix</th>
+          <th>Alternative envisageable</th>
+          <th>Raison du choix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MarBERT</strong></td>
+          <td>AraBERT, mBERT, CamelBERT</td>
+          <td>Seul modèle pré-entraîné massivement sur des dialectes arabes incluant le maghrébin</td>
+        </tr>
+        <tr>
+          <td><strong>Groq / Llama</strong></td>
+          <td>Helsinki-NLP (traducteur dédié)</td>
+          <td>Zéro infrastructure supplémentaire, qualité élevée, latence &lt;&nbsp;1&nbsp;s</td>
+        </tr>
+        <tr>
+          <td><strong>Règles arabizi maison</strong></td>
+          <td>Détecteur ML généraliste</td>
+          <td><code>langdetect</code> est aveugle à l'arabizi tunisien ; les règles sont déterministes et sans coût</td>
+        </tr>
+        <tr>
+          <td><strong>LIME</strong></td>
+          <td>SHAP, attention weights</td>
+          <td>Modèle-agnostique, lisible sur des entrées courtes, ne requiert pas l'accès aux gradients</td>
+        </tr>
+        <tr>
+          <td><strong>Softmax 3 classes</strong></td>
+          <td>Deux classifieurs binaires</td>
+          <td>Une seule inférence, probabilités directement comparables, architecture standard</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ 5. Fonctionnalités ══ -->
+  <h2>5. Ce que le pipeline permet</h2>
+
+  <ul>
+    <li><strong>Prédiction mono-texte</strong> avec affichage des probabilités et graphe de confiance par classe.</li>
+    <li><strong>Explication LIME</strong> indiquant les mots décisifs pour chaque classe de sentiment.</li>
+    <li><strong>Prédiction en batch</strong> sur une liste de textes, avec langue détectée et traduction éventuelle affichées.</li>
+    <li><strong>Support multilingue transparent</strong> : l'utilisateur soumet un texte en arabe, arabizi, français ou anglais sans préciser la langue.</li>
+    <li><strong>Seuil de confiance</strong> : un avertissement est levé lorsque la confiance est inférieure à 70&nbsp;%, signalant une incertitude du modèle.</li>
+  </ul>
+
+  <!-- ══ 6. Limites ══ -->
+  <h2>6. Limites et pistes d'amélioration</h2>
+
+  <div class="two-col">
+    <div class="card red">
+      <h4>Limites actuelles</h4>
+      <ul>
+        <li>Hésitation sur les textes très courts ou le <em>code-switching</em> dense</li>
+        <li>La traduction intermédiaire peut effacer l'ironie ou l'argot dialectal</li>
+        <li>La classe neutre reste difficile à prédire (sous-représentée en test)</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h4>Pistes d'amélioration</h4>
+      <ul>
+        <li>Ajouter un module de détection du sarcasme en amont</li>
+        <li>Entraîner un traducteur arabizi → arabe pour éviter le LLM</li>
+        <li>Continued pre-training de MarBERT sur corpus arabizi pour enrichir le vocabulaire</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    Projet HOPE &mdash; Pipeline Sentiment Tunisien &mdash; 2025
+  </div>
+
+</div>
+</body>
+</html>
